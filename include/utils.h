@@ -11,6 +11,8 @@
 #include <vector>
 #include <unordered_map>
 
+#include <torch/torch.h>
+
 struct encode
 {
 	std::unordered_map<char, int> characters;
@@ -30,6 +32,18 @@ struct encode
 	}
 	
 	std::vector<int> operator()(std::string s) const
+	{
+		std::vector<int> enc;
+		enc.reserve(s.size());
+		for (auto c : s)
+		{
+			enc.push_back((*this)(c));
+		}
+		
+		return enc;
+	}
+	
+	std::vector<int> operator()(std::vector<char> &s) const
 	{
 		std::vector<int> enc;
 		enc.reserve(s.size());
@@ -110,6 +124,18 @@ void printCharacters(std::vector<char> &v, int start, int number)
 		
 		if (number == 0)
 			break;
+	}
+	
+	std::cout << std::endl;
+}
+
+void printTensorShape(torch::Tensor &t)
+{
+	std::cout << "Shape: ";
+	
+	for (auto dim : t.sizes())
+	{
+		std::cout << dim << " ";
 	}
 	
 	std::cout << std::endl;

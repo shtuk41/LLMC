@@ -13,28 +13,37 @@ int main()
 		for (const auto it : inputBuffer)
 			inputSet.insert(it);
 			
-		std::cout << std::format("Number of different characters is: {}\n", inputSet.size());
-		
 		encode encodeO(inputSet);
 		decode decodeO(inputSet);
+	
+		torch::Tensor data = torch::tensor(encodeO(inputBuffer), torch::kLong);
 		
-		auto encodeVector = encodeO("hii there");
+		printTensorShape(data);
+		std::cout << "Data type: " << data.dtype() << std::endl;
 		
-		for (auto it : encodeVector)
+		size_t trainSize = data.size(0) * 0.9;
+		size_t valSize = data.size(0) - trainSize;
+		
+		std::cout << std::format("Train data size: {}\n", trainSize);
+		std::cout << std::format("Validation data size: {}\n", valSize);
+		torch::Tensor train_data = data.slice(0,0,trainSize);
+		torch::Tensor val_data = data.slice(0,trainSize,trainSize + valSize);
+
+		int block_size = 8;
+		auto x = train_data.slice(0,0,block_size);
+		auto y = train_data.slice(0,1,block_size + 1);
+		
+		std::cout << "full block: " << x << std::endl;
+		
+		for (int t = 0; t < block_size; t++)
 		{
-			std::cout << it << ",";
+			std::cout << "index:: " << t << std::endl;
+			torch::Tensor context = x.slice(0,0,t + 1);
+			torch::Tensor target = y[t];
+			std::cout << "context: " << context << std::endl;
+			std::cout << "target: " << target << std::endl;
 		}
 		
-		std::cout << std::endl;
-		
-		auto decodeVector = decodeO(encodeVector);
-		
-		for (auto it : decodeVector)
-		{
-			std::cout << it;
-		}
-		
-		std::cout << std::endl;
 	}
 	catch (std::exception &ex)
 	{
