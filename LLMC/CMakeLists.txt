@@ -15,7 +15,7 @@ set (MY_SOURCES
 )
 
 set(MY_HEADERS
-#    "${CMAKE_SOURCE_DIR}/include/MakemoreC.h"
+    "${CMAKE_SOURCE_DIR}/include/utils.h"
 )
 
 source_group("Header Files" FILES ${MY_HEADERS})
@@ -61,18 +61,13 @@ if(WIN32)
 elseif(LINUX)
     add_custom_command(TARGET LLMC POST_BUILD
 
-    #COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/items/names.txt" "${CMAKE_BINARY_DIR}/bin/names.txt"
-    #	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/items/names1000.txt" "${CMAKE_BINARY_DIR}/bin/names1000.txt"
-
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/LLMC/source/input.txt" "${CMAKE_BINARY_DIR}/bin/input.txt"
 
     # Copy shaders directory to both locations
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/bin"
     COMMENT "Deploying linux  runtime SO dependencies relative to Torch_DIR..."
 )
 endif()
-
-
-
 
 if(WIN32)
 	target_compile_features(LLMC PRIVATE cxx_std_20)

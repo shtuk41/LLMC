@@ -1,0 +1,116 @@
+
+#pragma once
+
+#include <format>
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <unordered_map>
+
+struct encode
+{
+	std::unordered_map<char, int> characters;
+	
+	encode(const std::set<char> &s)
+	{
+		int index = 0;
+		for (auto c : s)
+		{
+			characters[c] = index++;
+		}
+	}
+	
+	int operator()(char c) const
+	{
+		return characters.at(c);
+	}
+	
+	std::vector<int> operator()(std::string s) const
+	{
+		std::vector<int> enc;
+		enc.reserve(s.size());
+		for (auto c : s)
+		{
+			enc.push_back((*this)(c));
+		}
+		
+		return enc;
+	}
+};
+
+struct decode
+{
+	std::unordered_map<int, char> characters;
+	
+	decode(const std::set<char> &s)
+	{
+		int index = 0;
+		for (auto c : s)
+		{
+			characters[index++] = c;
+		}
+	}
+	
+	char operator()(int index) const
+	{
+		return characters.at(index);
+	}
+	
+	std::vector<char> operator()(std::vector<int> &encoded) const
+	{
+		std::vector<char> dec;
+		dec.reserve(encoded.size());
+		for (auto ii : encoded)
+		{
+			dec.push_back((*this)(ii));
+		}
+		
+		return dec;
+	}
+};
+
+std::vector<char> readInputData()
+{
+	std::ifstream inputFile("input.txt");
+	
+	if (!inputFile.is_open())
+	{
+		std::cout << "Unable to open input.txt" << std::endl;
+		throw std::runtime_error("unable to open input.txt"); 
+	}
+	
+	inputFile.seekg(0, std::ios::end);
+	std::streamsize size = inputFile.tellg();
+	
+	std::cout << std::format("input.txt size: {}\n", size);
+	
+	inputFile.seekg(0, std::ios::beg);
+	
+	std::vector<char> buffer(size);
+	if (inputFile.read(buffer.data(), size))
+	{
+		return buffer;
+	}
+	
+	throw std::runtime_error("Failed to read file input.txt");
+}
+
+void printCharacters(std::vector<char> &v, int start, int number)
+{
+	std::vector<char>::iterator it = v.begin() + start;
+	
+	for (; it != v.end(); ++it)
+	{
+		std::cout << *it;
+		number--;
+		
+		if (number == 0)
+			break;
+	}
+	
+	std::cout << std::endl;
+}
