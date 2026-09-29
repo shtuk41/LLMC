@@ -39,21 +39,6 @@ int main()
 		torch::Tensor train_data = data.slice(0,0,trainSize);
 		torch::Tensor val_data = data.slice(0,trainSize,trainSize + valSize);
 
-		//int block_size = 8;
-		//auto x = train_data.slice(0,0,block_size);
-		//auto y = train_data.slice(0,1,block_size + 1);
-		
-		//std::cout << "full block: " << x << std::endl;
-		
-		//for (int t = 0; t < block_size; t++)
-		//{
-		//	std::cout << "index:: " << t << std::endl;
-		//	torch::Tensor context = x.slice(0,0,t + 1);
-		//	torch::Tensor target = y[t];
-		//	std::cout << "context: " << context << std::endl;
-		//	std::cout << "target: " << target << std::endl;
-		//}
-		
 		auto get_batch = [&](std::string_view split) -> std::pair<torch::Tensor, torch::Tensor>
 		{
 			torch::Tensor current_data;
