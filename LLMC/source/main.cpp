@@ -9,15 +9,102 @@
 #include <utils.h>
 
 void dev1();
+void dev2();
+void dev3();
 
 int main()
 {
 	torch::xpu::manual_seed(1337);
 	
-	dev1();
+	//dev1();
+	//dev2();
+	dev3();
 		
 	std::cout << "The end\n";
 	return 0;
+}
+
+void dev3()
+{
+	std::cout << "dev2\n\n";
+	
+	try
+	{
+		int max_new_tokens = 100;	
+		auto idx = torch::zeros({1,1},torch::kLong);
+		
+		auto m = BigramLanguageModel(65);
+		idx = m.generate(idx, max_new_tokens);
+		
+		auto cpu_tensor = idx.to(torch::kCPU).contiguous();
+		int64_t* ptr = cpu_tensor.data_ptr<int64_t>();
+		std::vector<int64_t> vec(ptr, ptr + cpu_tensor.numel());
+		
+		std::vector<char> inputBuffer = readInputData();
+		std::cout << std::format("Number of characters: {}\n", inputBuffer.size()); 
+		std::set<char> inputSet;
+		
+		for (const auto it : inputBuffer)
+			inputSet.insert(it);
+		
+		decode<int64_t> decodeO(inputSet);
+		
+		auto output = decodeO(vec);
+		
+		for (char c : output)
+		{
+			std::cout << c;
+		}
+		
+		std::cout << std::endl;
+		
+	}
+	catch (std::exception &ex)
+	{
+		std::cout << std::format("Exception: {}", ex.what());
+	}
+}
+
+
+void dev2()
+{
+	std::cout << "dev2\n\n";
+	
+	try
+	{
+		int max_new_tokens = 100;	
+		auto idx = torch::zeros({1,1},torch::kLong);
+		
+		auto m = BigramLanguageModel(65);
+		idx = m.generate(idx, max_new_tokens);
+		
+		auto cpu_tensor = idx.to(torch::kCPU).contiguous();
+		int64_t* ptr = cpu_tensor.data_ptr<int64_t>();
+		std::vector<int64_t> vec(ptr, ptr + cpu_tensor.numel());
+		
+		std::vector<char> inputBuffer = readInputData();
+		std::cout << std::format("Number of characters: {}\n", inputBuffer.size()); 
+		std::set<char> inputSet;
+		
+		for (const auto it : inputBuffer)
+			inputSet.insert(it);
+		
+		decode<int64_t> decodeO(inputSet);
+		
+		auto output = decodeO(vec);
+		
+		for (char c : output)
+		{
+			std::cout << c;
+		}
+		
+		std::cout << std::endl;
+		
+	}
+	catch (std::exception &ex)
+	{
+		std::cout << std::format("Exception: {}", ex.what());
+	}
 }
 
 void dev1()

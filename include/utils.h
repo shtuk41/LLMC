@@ -56,25 +56,26 @@ struct encode
 	}
 };
 
+template <class T = int64_t>
 struct decode
 {
-	std::unordered_map<int, char> characters;
+	std::unordered_map<T, char> characters;
 	
 	decode(const std::set<char> &s)
 	{
-		int index = 0;
+		T index = 0;
 		for (auto c : s)
 		{
 			characters[index++] = c;
 		}
 	}
 	
-	char operator()(int index) const
+	char operator()(T index) const
 	{
 		return characters.at(index);
 	}
 	
-	std::vector<char> operator()(std::vector<int> &encoded) const
+	std::vector<char> operator()(std::vector<T> &encoded) const
 	{
 		std::vector<char> dec;
 		dec.reserve(encoded.size());
@@ -84,6 +85,14 @@ struct decode
 		}
 		
 		return dec;
+	}
+	
+	void print()
+	{
+		for (const auto&[t1, t2] : characters)
+		{
+			std::cout << t1 << " " << t2 << std::endl;
+		}
 	}
 };
 
