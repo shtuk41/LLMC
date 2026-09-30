@@ -5,6 +5,7 @@
 
 #include <torch/torch.h>
 
+#include <bigramLanguageModel.h>
 #include <utils.h>
 
 int main()
@@ -79,6 +80,24 @@ int main()
 		
 		std::cout << "xb:\n" << xb << std::endl;
 		std::cout << "yb:\n" << yb << std::endl;
+		
+		auto m = BigramLanguageModel(65);
+		auto [logits, loss] =  m.forward(xb, yb);
+		
+		std::cout << "Logits sizes: \n";
+		printTensorShape(logits);
+		
+		//std::cout << "logits:\n" << logits << std::endl;
+		std::cout << "loss:\n" << loss << std::endl;
+		
+		auto idx = xb;
+		
+		idx = m.generate(idx, 1);
+		
+		std::cout << "New ids: \n";
+		
+		std::cout << idx << std::endl;
+		
 	}
 	catch (std::exception &ex)
 	{
