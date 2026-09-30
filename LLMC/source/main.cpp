@@ -8,9 +8,21 @@
 #include <bigramLanguageModel.h>
 #include <utils.h>
 
+void dev1();
+
 int main()
 {
 	torch::xpu::manual_seed(1337);
+	
+	dev1();
+		
+	std::cout << "The end\n";
+	return 0;
+}
+
+void dev1()
+{
+	std::cout << "dev1\n\n";
 	
 	int batch_size = 4;
 	int block_size = 8;
@@ -93,19 +105,13 @@ int main()
 		auto idx = xb;
 		
 		idx = m.generate(idx, 1);
-		
 		std::cout << "New ids: \n";
-		
 		std::cout << idx << std::endl;
 		
 	}
 	catch (std::exception &ex)
 	{
 		std::cout << std::format("Exception: {}", ex.what());
-		return 0;
 	}
-		
-	std::cout << "The end\n";
-	return 0;
 }
 
