@@ -92,12 +92,12 @@ void dev3()
 		
 		auto optimizer = torch::optim::Adam(m.parameters(), 1e-3);
 		
-		for (int step = 0; step < 1000000; step++)
+		for (int step = 0; step < 10000; step++)
 		{
 			auto [xb, yb] = get_batch("train");
 			auto [logits, loss] =  m.forward(xb, yb);
 			
-			if (step % 10000 == 0)
+			if (step % 1000 == 0)
 				std::cout << "step:  " << step << ",   " << "loss: " << loss << std::endl;
 			
 			optimizer.zero_grad(true);
@@ -105,6 +105,26 @@ void dev3()
 			loss.backward();
 			optimizer.step();
 		}
+		
+		int max_new_tokens = 300;	
+		auto idx = torch::zeros({1,1},torch::kLong);
+		
+		idx = m.generate(idx, max_new_tokens);
+		
+		auto cpu_tensor = idx.to(torch::kCPU).contiguous();
+		int64_t* ptr = cpu_tensor.data_ptr<int64_t>();
+		std::vector<int64_t> vec(ptr, ptr + cpu_tensor.numel());
+		
+		decode<int64_t> decodeO(inputSet);
+		
+		auto output = decodeO(vec);
+		
+		for (char c : output)
+		{
+			std::cout << c;
+		}
+		
+		std::cout << std::endl;
 	}
 	catch (std::exception &ex)
 	{
