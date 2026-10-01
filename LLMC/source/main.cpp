@@ -2,6 +2,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <unordered_map>
 
 #include <torch/torch.h>
 
@@ -17,6 +18,7 @@ struct configuration
 	int train_steps = 10000;
 	float learning_rate = 1e-3;
 	int train_loss_print_every_num_iter  = 1000;
+	int estimate_loss_iterations = 200;
 } configuration_params;
 
 void dev1();
@@ -38,6 +40,8 @@ int main()
 void dev3(configuration &params)
 {
 	std::cout << "dev2\n\n";
+	
+	torch::Device device(torch::kCUDA);
 	
 	try
 	{
@@ -89,23 +93,56 @@ void dev3(configuration &params)
 				y_list.push_back(current_data.slice(0, idx + 1, idx + params.block_size + 1));
 			}
 			
-			auto x = torch::stack(x_list);
-			auto y = torch::stack(y_list);
+			auto x = torch::stack(x_list).to(device);
+			auto y = torch::stack(y_list).to(device);
 			
 			return {x, y};
 		};
     
-		auto m = BigramLanguageModel(65);
+		BigramLanguageModel m(65);
+		m.to(device);
 	
 		auto optimizer = torch::optim::Adam(m.parameters(), params.learning_rate);
 		
+		
+		auto estimate_loss = [&](int iterations) -> std::unordered_map<std::string, float>
+		{
+			std::unordered_map<std::string, float> out;
+			m.eval();  //switch to evaluation model;
+			
+			{
+				torch::NoGradGuard no_grad;
+				
+				for (const auto& split: std::array{"train", "val"})
+				{
+					float total_loss = 0.0f;
+					
+					for (int k = 0; k < iterations; k++)
+					{
+						auto [xb, yb] = get_batch(split);
+						auto [logits, loss] = m.forward(xb, yb);
+						total_loss += loss.item<float>();
+					}
+					out[split] = total_loss / iterations;
+				}
+			}
+			
+			m.train();  //switch back to train mode
+			
+			return out;
+		};
+		
+		
 		for (int step = 0; step < params.train_steps; step++)
 		{
+			if (step % params.train_loss_print_every_num_iter == 0)
+			{
+				auto losses = estimate_loss(params.estimate_loss_iterations); 
+				std::cout << "step:  " << step << ", " << "losses train: " << losses["train"] << " val: " << losses["val"] << std::endl;
+			}
+			
 			auto [xb, yb] = get_batch("train");
 			auto [logits, loss] =  m.forward(xb, yb);
-			
-			if (step % params.train_loss_print_every_num_iter == 0)
-				std::cout << "step:  " << step << ",   " << "loss: " << loss << std::endl;
 			
 			optimizer.zero_grad(true);
 			
@@ -113,7 +150,7 @@ void dev3(configuration &params)
 			optimizer.step();
 		}
 		
-		auto idx = torch::zeros({1,1},torch::kLong);
+		auto idx = torch::zeros({1,1}, torch::kLong).to(device);
 		
 		idx = m.generate(idx, params.max_new_tokens);
 		
