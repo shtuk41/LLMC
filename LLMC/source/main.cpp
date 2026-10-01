@@ -1,4 +1,5 @@
 
+#include <limits>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -19,6 +20,7 @@ struct configuration
 	float learning_rate = 1e-3;
 	int train_loss_print_every_num_iter  = 1000;
 	int estimate_loss_iterations = 200;
+	int n_embd = 32;
 } configuration_params;
 
 void dev1();
@@ -64,8 +66,10 @@ void dev4()
 	
 	std::cout << xbow << std::endl;
 	
-	auto ttonces = torch::ones({T,T});
-	auto wei = torch::tril(ttonces);
+	auto tril = torch::ones({T,T});
+	auto wei = torch::tril(tril);
+	wei = wei.masked_fill(tril == 0, -std::numeric_limits<float>::infinity());
+	//wei = torch::nn::functional::softmax(wei, -1);
 	wei = wei / wei.sum(1, true);
 	auto xbow2 = wei.matmul(x);
 	
