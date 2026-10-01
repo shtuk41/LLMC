@@ -24,6 +24,7 @@ struct configuration
 void dev1();
 void dev2();
 void dev3(configuration &params);
+void dev4();
 
 int main()
 {
@@ -31,15 +32,49 @@ int main()
 	
 	//dev1();
 	//dev2();
-	dev3(configuration_params);
+	//dev3(configuration_params);
+	dev4();
 		
 	std::cout << "The end\n";
 	return 0;
 }
 
+void dev4()
+{
+	std::cout << "dev4\n\n";
+	
+	int64_t B = 4;
+    int64_t T = 8;
+    int64_t C = 2;
+    
+    auto x = torch::randn({B, T, C});
+    
+    auto xbow = torch::zeros({B,T,C});
+	
+	for (int64_t b = 0; b < B; b++)
+	{
+		for (int64_t t = 0; t < T; t++)
+		{
+			auto x_b = x[b];
+			auto xprev = x_b.slice(0, 0, t + 1);
+			auto mean_val = torch::mean(xprev, 0);
+			xbow.index_put_({b, t}, mean_val);
+		}
+	}
+	
+	std::cout << xbow << std::endl;
+	
+	auto ttonces = torch::ones({T,T});
+	auto wei = torch::tril(ttonces);
+	wei = wei / wei.sum(1, true);
+	auto xbow2 = wei.matmul(x);
+	
+	std::cout << xbow2 << std::endl;
+}
+
 void dev3(configuration &params)
 {
-	std::cout << "dev2\n\n";
+	std::cout << "dev3\n\n";
 	
 	torch::Device device(torch::kCUDA);
 	
