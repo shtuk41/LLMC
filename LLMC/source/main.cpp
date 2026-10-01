@@ -28,18 +28,11 @@ void dev3()
 {
 	std::cout << "dev2\n\n";
 	
+	int batch_size = 32;
+	int block_size = 8;
+	
 	try
 	{
-		int max_new_tokens = 100;	
-		auto idx = torch::zeros({1,1},torch::kLong);
-		
-		auto m = BigramLanguageModel(65);
-		idx = m.generate(idx, max_new_tokens);
-		
-		auto cpu_tensor = idx.to(torch::kCPU).contiguous();
-		int64_t* ptr = cpu_tensor.data_ptr<int64_t>();
-		std::vector<int64_t> vec(ptr, ptr + cpu_tensor.numel());
-		
 		std::vector<char> inputBuffer = readInputData();
 		std::cout << std::format("Number of characters: {}\n", inputBuffer.size()); 
 		std::set<char> inputSet;
@@ -47,24 +40,80 @@ void dev3()
 		for (const auto it : inputBuffer)
 			inputSet.insert(it);
 		
-		decode<int64_t> decodeO(inputSet);
+		encode encodeO(inputSet);
 		
-		auto output = decodeO(vec);
+		torch::Tensor data = torch::tensor(encodeO(inputBuffer), torch::kLong);
 		
-		for (char c : output)
+		size_t trainSize = data.size(0) * 0.9;
+		size_t valSize = data.size(0) - trainSize;
+		
+		std::cout << std::format("Train data size: {}\n", trainSize);
+		std::cout << std::format("Validation data size: {}\n", valSize);
+		torch::Tensor train_data = data.slice(0, 0, trainSize);
+		torch::Tensor val_data = data.slice(0,trainSize,trainSize + valSize);
+
+		auto get_batch = [&](std::string_view split) -> std::pair<torch::Tensor, torch::Tensor>
 		{
-			std::cout << c;
+			torch::Tensor current_data;
+			
+			if (split == "train")
+			{
+				current_data = train_data;
+			}
+			else
+			{
+				current_data = val_data;
+			}
+			
+			// Generate random starting indices for the batch
+			auto ix = torch::randint(0, current_data.size(0) - block_size, {batch_size}, torch::kLong);
+			auto ix_accessor = ix.accessor<int64_t, 1>();
+			
+			std::vector<torch::Tensor> x_list;
+			std::vector<torch::Tensor> y_list;
+			x_list.reserve(batch_size);
+			y_list.reserve(batch_size);
+			
+			for (int64_t i = 0; i < batch_size; ++i)
+			{
+				int64_t idx = ix_accessor[i];
+				x_list.push_back(current_data.slice(0, idx, idx + block_size));
+				y_list.push_back(current_data.slice(0, idx + 1, idx + block_size + 1));
+			}
+			
+			auto x = torch::stack(x_list);
+			auto y = torch::stack(y_list);
+			
+			return {x, y};
+		};
+    
+		auto m = BigramLanguageModel(65);
+		//idx = m.generate(idx, max_new_tokens);
+		
+		auto optimizer = torch::optim::Adam(m.parameters(), 1e-3);
+		
+		for (int step = 0; step < 1000000; step++)
+		{
+			auto [xb, yb] = get_batch("train");
+			
+			auto m = BigramLanguageModel(65);
+			auto [logits, loss] =  m.forward(xb, yb);
+			
+			
+			if (step % 10000 == 0)
+				std::cout << "step:  " << step << ",   " << "loss: " << loss << std::endl;
+			
+			optimizer.zero_grad(true);
+			
+			loss.backward();
+			optimizer.step();
 		}
-		
-		std::cout << std::endl;
-		
 	}
 	catch (std::exception &ex)
 	{
 		std::cout << std::format("Exception: {}", ex.what());
 	}
 }
-
 
 void dev2()
 {
