@@ -95,10 +95,7 @@ void dev3()
 		for (int step = 0; step < 1000000; step++)
 		{
 			auto [xb, yb] = get_batch("train");
-			
-			auto m = BigramLanguageModel(65);
 			auto [logits, loss] =  m.forward(xb, yb);
-			
 			
 			if (step % 10000 == 0)
 				std::cout << "step:  " << step << ",   " << "loss: " << loss << std::endl;
