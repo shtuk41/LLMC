@@ -8,9 +8,20 @@
 #include <bigramLanguageModel.h>
 #include <utils.h>
 
+struct configuration
+{
+	int batch_size = 32;
+	int block_size = 8;
+	int max_new_tokens = 500;	
+	double train_percent = 0.9; 
+	int train_steps = 10000;
+	float learning_rate = 1e-3;
+	int train_loss_print_every_num_iter  = 1000;
+} configuration_params;
+
 void dev1();
 void dev2();
-void dev3();
+void dev3(configuration &params);
 
 int main()
 {
@@ -18,18 +29,15 @@ int main()
 	
 	//dev1();
 	//dev2();
-	dev3();
+	dev3(configuration_params);
 		
 	std::cout << "The end\n";
 	return 0;
 }
 
-void dev3()
+void dev3(configuration &params)
 {
 	std::cout << "dev2\n\n";
-	
-	int batch_size = 32;
-	int block_size = 8;
 	
 	try
 	{
@@ -44,7 +52,7 @@ void dev3()
 		
 		torch::Tensor data = torch::tensor(encodeO(inputBuffer), torch::kLong);
 		
-		size_t trainSize = data.size(0) * 0.9;
+		size_t trainSize = data.size(0) * params.train_percent;
 		size_t valSize = data.size(0) - trainSize;
 		
 		std::cout << std::format("Train data size: {}\n", trainSize);
@@ -66,19 +74,19 @@ void dev3()
 			}
 			
 			// Generate random starting indices for the batch
-			auto ix = torch::randint(0, current_data.size(0) - block_size, {batch_size}, torch::kLong);
+			auto ix = torch::randint(0, current_data.size(0) - params.block_size, {params.batch_size}, torch::kLong);
 			auto ix_accessor = ix.accessor<int64_t, 1>();
 			
 			std::vector<torch::Tensor> x_list;
 			std::vector<torch::Tensor> y_list;
-			x_list.reserve(batch_size);
-			y_list.reserve(batch_size);
+			x_list.reserve(params.batch_size);
+			y_list.reserve(params.batch_size);
 			
-			for (int64_t i = 0; i < batch_size; ++i)
+			for (int64_t i = 0; i < params.batch_size; ++i)
 			{
 				int64_t idx = ix_accessor[i];
-				x_list.push_back(current_data.slice(0, idx, idx + block_size));
-				y_list.push_back(current_data.slice(0, idx + 1, idx + block_size + 1));
+				x_list.push_back(current_data.slice(0, idx, idx + params.block_size));
+				y_list.push_back(current_data.slice(0, idx + 1, idx + params.block_size + 1));
 			}
 			
 			auto x = torch::stack(x_list);
@@ -88,16 +96,15 @@ void dev3()
 		};
     
 		auto m = BigramLanguageModel(65);
-		//idx = m.generate(idx, max_new_tokens);
+	
+		auto optimizer = torch::optim::Adam(m.parameters(), params.learning_rate);
 		
-		auto optimizer = torch::optim::Adam(m.parameters(), 1e-3);
-		
-		for (int step = 0; step < 10000; step++)
+		for (int step = 0; step < params.train_steps; step++)
 		{
 			auto [xb, yb] = get_batch("train");
 			auto [logits, loss] =  m.forward(xb, yb);
 			
-			if (step % 1000 == 0)
+			if (step % params.train_loss_print_every_num_iter == 0)
 				std::cout << "step:  " << step << ",   " << "loss: " << loss << std::endl;
 			
 			optimizer.zero_grad(true);
@@ -106,10 +113,9 @@ void dev3()
 			optimizer.step();
 		}
 		
-		int max_new_tokens = 300;	
 		auto idx = torch::zeros({1,1},torch::kLong);
 		
-		idx = m.generate(idx, max_new_tokens);
+		idx = m.generate(idx, params.max_new_tokens);
 		
 		auto cpu_tensor = idx.to(torch::kCPU).contiguous();
 		int64_t* ptr = cpu_tensor.data_ptr<int64_t>();
