@@ -64,15 +64,16 @@ void dev4()
 		}
 	}
 	
+	std::cout << "XBOW\n";
 	std::cout << xbow << std::endl;
 	
 	auto tril = torch::ones({T,T});
-	auto wei = torch::tril(tril);
-	wei = wei.masked_fill(tril == 0, -std::numeric_limits<float>::infinity());
-	//wei = torch::nn::functional::softmax(wei, -1);
-	wei = wei / wei.sum(1, true);
+	tril = torch::tril(tril);
+	auto wei = tril.masked_fill(tril == 0, -std::numeric_limits<float>::infinity());
+	wei = torch::nn::functional::softmax(wei, -1);
 	auto xbow2 = wei.matmul(x);
 	
+	std::cout << "XBOW2\n";
 	std::cout << xbow2 << std::endl;
 }
 
