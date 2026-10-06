@@ -47,16 +47,13 @@ target_compile_features(LLMC PRIVATE cxx_std_20)
 if(WIN32)
     add_custom_command(TARGET LLMC POST_BUILD
 
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/items/names.txt" "${CMAKE_SOURCE_DIR}/build/MakemoreCLibTorch/names.txt"
-    	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/items/names.txt" "${CMAKE_SOURCE_DIR}/build/x64/$<CONFIG>/names.txt"
-	
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/items/names1000.txt" "${CMAKE_SOURCE_DIR}/build/MakemoreCLibTorch/names1000.txt"
-    	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/items/names1000.txt" "${CMAKE_SOURCE_DIR}/build/x64/$<CONFIG>/names1000.txt"
-
-
-    # Copy shaders directory to both locations
+	# Copy shaders directory to both locations
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/MakemoreCLibTorch"
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/x64/$<CONFIG>"
+
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/LLMC/source/input.txt" "${CMAKE_BINARY_DIR}/x64/$<CONFIG>"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/x64/$<CONFIG>"
+
    	COMMENT "Deploying windows runtime DLL dependencies relative to Torch_DIR..."
 )
 elseif(LINUX)
