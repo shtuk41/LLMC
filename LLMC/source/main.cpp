@@ -27,6 +27,7 @@ void dev1();
 void dev2();
 void dev3(configuration &params);
 void dev4();
+void dev5();
 
 int main()
 {
@@ -35,10 +36,52 @@ int main()
 	//dev1();
 	//dev2();
 	//dev3(configuration_params);
-	dev4();
+	//dev4();
+	dev5();
+	
 		
 	std::cout << "The end\n";
 	return 0;
+}
+
+void dev5()
+{
+	std::cout << "dev5\n\n";
+	
+	int64_t B = 4;
+    int64_t T = 8;
+    int64_t C = 32;
+    
+    auto x = torch::randn({B, T, C});
+    
+    int64_t head_size = 16;
+    auto key_options = torch::nn::LinearOptions(C, head_size).bias(false);
+    torch::nn::Linear key(key_options);
+    auto query_options = torch::nn::LinearOptions(C, head_size).bias(false);
+    torch::nn::Linear query(query_options);
+    auto k = key(x);
+    auto q = query(x);
+    
+    auto wei = q.matmul(k.transpose(-2,-1));
+   	
+	auto tril = torch::ones({T,T});
+	tril = torch::tril(tril);
+	
+	std::cout << "tril:\n";
+	std::cout << tril << std::endl;
+	
+	wei = wei.masked_fill(tril == 0, -std::numeric_limits<float>::infinity());
+	wei = torch::nn::functional::softmax(wei, -1);
+	
+	std::cout << "wei:\n";
+	std::cout << wei << std::endl;
+	
+	auto xbow = wei.matmul(x);
+	
+	std::cout << "xbow Shape: \n";
+	printTensorShape(xbow);
+	
+	std::cout << xbow << std::endl;
 }
 
 void dev4()
