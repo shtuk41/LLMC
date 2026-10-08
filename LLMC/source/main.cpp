@@ -59,6 +59,8 @@ void dev5()
     torch::nn::Linear key(key_options);
     auto query_options = torch::nn::LinearOptions(C, head_size).bias(false);
     torch::nn::Linear query(query_options);
+	auto value_options = torch::nn::LinearOptions(C, head_size).bias(false);
+	torch::nn::Linear value(value_options);
     auto k = key(x);
     auto q = query(x);
     
@@ -67,21 +69,23 @@ void dev5()
 	auto tril = torch::ones({T,T});
 	tril = torch::tril(tril);
 	
-	std::cout << "tril:\n";
-	std::cout << tril << std::endl;
+	//std::cout << "tril:\n";
+	//std::cout << tril << std::endl;
 	
 	wei = wei.masked_fill(tril == 0, -std::numeric_limits<float>::infinity());
 	wei = torch::nn::functional::softmax(wei, -1);
+
+
+	auto v = value(x);
+	auto out = wei.matmul(v);
 	
-	std::cout << "wei:\n";
-	std::cout << wei << std::endl;
+	//std::cout << "wei:\n";
+	//std::cout << wei << std::endl;
+
+	std::cout << "out:\n";
+	std::cout << out << std::endl;
 	
-	auto xbow = wei.matmul(x);
-	
-	std::cout << "xbow Shape: \n";
-	printTensorShape(xbow);
-	
-	std::cout << xbow << std::endl;
+	printTensorShape(out);
 }
 
 void dev4()
