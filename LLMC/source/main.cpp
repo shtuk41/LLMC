@@ -64,7 +64,7 @@ void dev5()
     auto k = key(x);
     auto q = query(x);
     
-    auto wei = q.matmul(k.transpose(-2,-1));
+    auto wei = q.matmul(k.transpose(-2,-1)) * sqrt(head_size);
    	
 	auto tril = torch::ones({T,T});
 	tril = torch::tril(tril);
@@ -75,12 +75,11 @@ void dev5()
 	wei = wei.masked_fill(tril == 0, -std::numeric_limits<float>::infinity());
 	wei = torch::nn::functional::softmax(wei, -1);
 
-
 	auto v = value(x);
 	auto out = wei.matmul(v);
 	
-	//std::cout << "wei:\n";
-	//std::cout << wei << std::endl;
+	std::cout << "wei:\n";
+	std::cout << wei << std::endl;
 
 	std::cout << "out:\n";
 	std::cout << out << std::endl;
