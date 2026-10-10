@@ -98,7 +98,7 @@ struct decode
 
 std::vector<char> readInputData()
 {
-	std::ifstream inputFile("input.txt");
+	std::ifstream inputFile("input.txt", std::ios::binary);
 	
 	if (!inputFile.is_open())
 	{
@@ -114,6 +114,7 @@ std::vector<char> readInputData()
 	inputFile.seekg(0, std::ios::beg);
 	
 	std::vector<char> buffer(size);
+
 	if (inputFile.read(buffer.data(), size))
 	{
 		return buffer;

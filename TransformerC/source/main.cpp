@@ -8,26 +8,30 @@
 #include <torch/torch.h>
 
 #include <bigramLanguageModel.h>
+#include <head.h>
 #include <utils.h>
 
 struct configuration
 {
+	int head_size = 16;
 	int batch_size = 32;
 	int block_size = 8;
+	int n_embd = 32;
 	int max_new_tokens = 500;	
 	double train_percent = 0.9; 
-	int train_steps = 10000;
+	int train_steps = 5000;
 	float learning_rate = 1e-3;
 	int train_loss_print_every_num_iter  = 1000;
 	int estimate_loss_iterations = 200;
-	int n_embd = 32;
+	
 } configuration_params;
 
 void dev1();
 void dev2();
 void dev3(configuration &params);
 void dev4();
-void dev5();
+void dev5(configuration& params);
+void dev6(configuration& params);
 
 int main()
 {
@@ -37,14 +41,161 @@ int main()
 	//dev2();
 	//dev3(configuration_params);
 	//dev4();
-	dev5();
+	//dev5(configuration_params);
+	dev6(configuration_params);
 	
-		
 	std::cout << "The end\n";
 	return 0;
 }
 
-void dev5()
+void dev6(configuration& params)
+{
+	std::cout << "dev6\n\n";
+
+	torch::Device device(torch::kCUDA);
+
+	try
+	{
+		std::vector<char> inputBuffer = readInputData();
+		std::cout << std::format("Number of characters: {}\n", inputBuffer.size());
+		std::set<char> inputSet;
+
+		for (const auto it : inputBuffer)
+			inputSet.insert(it);
+
+		encode encodeO(inputSet);
+
+		torch::Tensor data = torch::tensor(encodeO(inputBuffer), torch::kLong);
+
+		size_t trainSize = data.size(0) * params.train_percent;
+		size_t valSize = data.size(0) - trainSize;
+
+		std::cout << std::format("Train data size: {}\n", trainSize);
+		std::cout << std::format("Validation data size: {}\n", valSize);
+		torch::Tensor train_data = data.slice(0, 0, trainSize);
+		torch::Tensor val_data = data.slice(0, trainSize, trainSize + valSize);
+
+		std::cout << "Check point 1\n";
+
+		auto get_batch = [&](std::string_view split) -> std::pair<torch::Tensor, torch::Tensor>
+			{
+				torch::Tensor current_data;
+
+				if (split == "train")
+				{
+					current_data = train_data;
+				}
+				else
+				{
+					current_data = val_data;
+				}
+
+				// Generate random starting indices for the batch
+				auto ix = torch::randint(0, current_data.size(0) - params.block_size, { params.batch_size }, torch::kLong);
+				auto ix_accessor = ix.accessor<int64_t, 1>();
+
+				std::vector<torch::Tensor> x_list;
+				std::vector<torch::Tensor> y_list;
+				x_list.reserve(params.batch_size);
+				y_list.reserve(params.batch_size);
+
+				for (int64_t i = 0; i < params.batch_size; ++i)
+				{
+					int64_t idx = ix_accessor[i];
+					x_list.push_back(current_data.slice(0, idx, idx + params.block_size));
+					y_list.push_back(current_data.slice(0, idx + 1, idx + params.block_size + 1));
+				}
+
+				auto x = torch::stack(x_list).to(device);
+				auto y = torch::stack(y_list).to(device);
+
+				return { x, y };
+			};
+
+		std::cout << "Check point 2\n";
+
+		BigramLanguageModel3 m(65, params.head_size, params.block_size, params.n_embd);
+
+		std::cout << "Check point 3\n";
+		m.to(device);
+
+		std::cout << "Check point 4\n";
+
+		auto optimizer = torch::optim::Adam(m.parameters(), params.learning_rate);
+
+		std::cout << "Check point 5\n";
+
+		auto estimate_loss = [&](int iterations) -> std::unordered_map<std::string, float>
+			{
+				std::unordered_map<std::string, float> out;
+				m.eval();  //switch to evaluation model;
+
+				{
+					torch::NoGradGuard no_grad;
+
+					for (const auto& split : std::array{ "train", "val" })
+					{
+						float total_loss = 0.0f;
+
+						for (int k = 0; k < iterations; k++)
+						{
+							auto [xb, yb] = get_batch(split);
+							auto [logits, loss] = m.forward(xb, yb);
+							total_loss += loss.item<float>();
+						}
+						out[split] = total_loss / iterations;
+					}
+				}
+
+				m.train();  //switch back to train mode
+
+				return out;
+			};
+
+
+		for (int step = 0; step < params.train_steps; step++)
+		{
+			if (step % params.train_loss_print_every_num_iter == 0)
+			{
+				auto losses = estimate_loss(params.estimate_loss_iterations);
+				std::cout << "step:  " << step << ", " << "losses train: " << losses["train"] << " val: " << losses["val"] << std::endl;
+			}
+
+			auto [xb, yb] = get_batch("train");
+			auto [logits, loss] = m.forward(xb, yb);
+
+			optimizer.zero_grad(true);
+
+			loss.backward();
+			optimizer.step();
+		}
+
+		auto idx = torch::zeros({ 1,1 }, torch::kLong).to(device);
+
+		idx = m.generate(idx, params.max_new_tokens);
+
+		auto cpu_tensor = idx.to(torch::kCPU).contiguous();
+		int64_t* ptr = cpu_tensor.data_ptr<int64_t>();
+		std::vector<int64_t> vec(ptr, ptr + cpu_tensor.numel());
+
+		decode<int64_t> decodeO(inputSet);
+
+		auto output = decodeO(vec);
+
+		for (char c : output)
+		{
+			std::cout << c;
+		}
+
+		std::cout << std::endl;
+	}
+	catch (std::exception& ex)
+	{
+		std::cout << std::format("Exception: {}", ex.what());
+	}
+}
+
+void dev5(configuration& params)
 {
 	std::cout << "dev5\n\n";
 	
