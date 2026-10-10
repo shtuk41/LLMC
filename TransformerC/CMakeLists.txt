@@ -1,6 +1,8 @@
 
 set(TORCH_DLL_DIR "${TORCH_INSTALL_PREFIX}/lib")
 
+message(STATUS "TORCH_INSTALL_PREFIX: ${TORCH_INSTALL_PREFIX}")
+
 if(WIN32)
 	file(GLOB TORCH_DLLS "${TORCH_DLL_DIR}/*.dll")
 elseif(LINUX)
@@ -11,7 +13,7 @@ find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 set (MY_SOURCES
-	"${CMAKE_SOURCE_DIR}/LLMC/source/main.cpp"
+	"${CMAKE_SOURCE_DIR}/TransformerC/source/main.cpp"
 )
 
 set(MY_HEADERS
@@ -21,45 +23,45 @@ set(MY_HEADERS
 
 source_group("Header Files" FILES ${MY_HEADERS})
 
-add_executable(LLMC 
+add_executable(TransformerC 
 	${MY_SOURCES} 
 )
 
-target_sources(LLMC PRIVATE 
+target_sources(TransformerC PRIVATE 
 	${MY_SOURCES} 
     ${MY_HEADERS}
 )
 
-target_include_directories(LLMC PRIVATE 
+target_include_directories(TransformerC PRIVATE 
 	${CMAKE_SOURCE_DIR}/include
 	${TORCH_INCLUDE_DIRS}
 )
 
-target_link_libraries(LLMC PRIVATE 
+target_link_libraries(TransformerC PRIVATE 
 	${TORCH_LIBRARIES}
 	CUDA::cudart
 	CUDA::cublas
 	CUDA::cufft
 )
 
-target_compile_features(LLMC PRIVATE cxx_std_20)
+target_compile_features(TransformerC PRIVATE cxx_std_20)
 
 if(WIN32)
-    add_custom_command(TARGET LLMC POST_BUILD
+    add_custom_command(TARGET TransformerC POST_BUILD
 
 	# Copy shaders directory to both locations
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/MakemoreCLibTorch"
+	# COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/MakemoreCLibTorch"
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/x64/$<CONFIG>"
 
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/LLMC/source/input.txt" "${CMAKE_BINARY_DIR}/x64/$<CONFIG>"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/TransformerC/source/input.txt" "${CMAKE_BINARY_DIR}/x64/$<CONFIG>"
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/x64/$<CONFIG>"
 
    	COMMENT "Deploying windows runtime DLL dependencies relative to Torch_DIR..."
 )
 elseif(LINUX)
-    add_custom_command(TARGET LLMC POST_BUILD
+    add_custom_command(TARGET TransformerC POST_BUILD
 
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/LLMC/source/input.txt" "${CMAKE_BINARY_DIR}/bin/input.txt"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/TransformerC/source/input.txt" "${CMAKE_BINARY_DIR}/bin/input.txt"
 
     # Copy shaders directory to both locations
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${TORCH_DLLS} "${CMAKE_BINARY_DIR}/bin"
@@ -68,9 +70,9 @@ elseif(LINUX)
 endif()
 
 if(WIN32)
-	target_compile_features(LLMC PRIVATE cxx_std_20)
+	target_compile_features(TransformerC PRIVATE cxx_std_20)
 
-    set_target_properties(LLMC PROPERTIES
+    set_target_properties(TransformerC PROPERTIES
     		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/x64/$<CONFIG>"
     		#RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/build/bin"
     		#RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/build/bin"
@@ -84,7 +86,7 @@ elseif(LINUX)
 	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_EXTENSIONS OFF)
 	
-	set_target_properties(LLMC PROPERTIES
+	set_target_properties(TransformerC PROPERTIES
 	    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 	    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin"
 	    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin"

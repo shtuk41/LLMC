@@ -38,12 +38,12 @@ endif()
 set(VCPKG_USE_SYSTEM_BINARIES ON CACHE BOOL "" FORCE)
 set(VCPKG_FORCE_SYSTEM_BINARIES ON CACHE BOOL "" FORCE)
 
-project(LLMC VERSION 0.1 LANGUAGES CXX)
+project(TransformerC VERSION 0.1 LANGUAGES CXX)
 
 if(WIN32)
 	set(Torch_DIR "D:/Files/MakemoreC/ThirdParty/libtorch-win-shared-with-deps-2.13.0+cu132/libtorch/share/cmake/Torch")
 elseif(LINUX)
-	set(Torch_DIR "~/Files/LLMC/ThirdParty/libtorch-shared-with-deps-2.13.0+cu132/libtorch/share/cmake/Torch")
+	set(Torch_DIR "~/Files/TransformerC/ThirdParty/libtorch-shared-with-deps-2.13.0+cu132/libtorch/share/cmake/Torch")
 endif()
 
 
@@ -51,11 +51,11 @@ find_package(Torch CONFIG REQUIRED)
 find_package(CUDAToolkit 13.3 REQUIRED)
 
 
-add_subdirectory(LLMC)
+add_subdirectory(TransformerC)
 
 if(BUILD_TESTING)
     enable_testing()
-    add_subdirectory(LLMC)
+    add_subdirectory(TransformerC)
 endif()
 
 
